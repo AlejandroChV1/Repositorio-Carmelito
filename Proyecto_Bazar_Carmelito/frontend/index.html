@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bazar Carmelito | Registro de Venta (SQLite local)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-dark: #1e3a8a;
+            --success: #059669;
+            --danger: #dc2626;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --radius: 12px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+            min-height: 100vh;
+            color: var(--gray-800);
+            line-height: 1.5;
+        }
+        .container { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+        header {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.5rem 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        header h1 { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+        header p { color: var(--gray-600); font-size: 0.875rem; }
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--gray-100);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 0.375rem; }
+        label { font-size: 0.875rem; font-weight: 500; color: var(--gray-600); }
+        input, select, textarea {
+            padding: 0.625rem 0.875rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            font-family: inherit;
+            background: white;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+        }
+        .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid var(--gray-200); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        thead { background: var(--gray-50); }
+        th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            border-bottom: 1px solid var(--gray-200);
+        }
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--gray-100);
+            vertical-align: middle;
+        }
+        tbody tr:hover { background: #f8fafc; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+            transition: all 0.15s ease;
+        }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+        .btn-danger { background: #fee2e2; color: var(--danger); }
+        .btn-outline {
+            background: white;
+            border: 1px solid var(--gray-300);
+            color: var(--gray-600);
+        }
+        .btn-outline:hover { background: var(--gray-50); }
+        .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
+        .actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--gray-100);
+            flex-wrap: wrap;
+        }
+        .totales {
+            background: var(--gray-50);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-top: 1.5rem;
+        }
+        .totales-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            text-align: right;
+        }
+        .total-item span { display: block; font-size: 0.8125rem; color: var(--gray-600); }
+        .total-item strong { font-size: 1.25rem; }
+        .total-item.final strong { color: var(--primary); font-size: 1.5rem; }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.625rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--gray-600); }
+        .status-bar {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            display: none;
+        }
+        .status-bar.ok { background: #d1fae5; color: #065f46; display: block; }
+        .status-bar.error { background: #fee2e2; color: #991b1b; display: block; }
+        .status-bar.info { background: #dbeafe; color: #1e40af; display: block; }
+        @media (max-width: 640px) {
+            .totales-grid { grid-template-columns: 1fr; text-align: left; }
+            header { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>🛒 Bazar Carmelito</h1>
+                <p>Sistema local de ventas e inventario (SQLite)</p>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                <span class="badge badge-warning" id="badgeConexion">Conectando...</span>
+                <span class="badge badge-success">Agosto 2026</span>
+            </div>
+        </header>
+
+        <div id="statusBar" class="status-bar"></div>
+
+        <div class="card">
+            <div class="card-title">📋 Datos de la Venta</div>
+            <div class="grid">
+                <div class="form-group">
+                    <label for="numero_venta">Número de Venta</label>
+                    <input type="text" id="numero_venta" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="fecha_venta">Fecha</label>
+                    <input type="date" id="fecha_venta" required>
+                </div>
+                <div class="form-group">
+                    <label for="hora_venta">Hora</label>
+                    <input type="time" id="hora_venta" required>
+                </div>
+                <div class="form-group">
+                    <label for="id_usuario">Vendedor</label>
+                    <select id="id_usuario" required>
+                        <option value="U001">Carlos Mendoza (U001)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top:1rem;">
+                <label for="observacion">Observación</label>
+                <textarea id="observacion" rows="2" placeholder="Ej: Venta de mostrador..."></textarea>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                📦 Productos
+                <button type="button" class="btn btn-outline btn-sm" onclick="agregarProducto()" style="margin-left:auto;">
+                    + Agregar producto
+                </button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:35%">Producto</th>
+                            <th style="width:12%">Cantidad</th>
+                            <th style="width:15%">P. Unitario (Bs)</th>
+                            <th style="width:12%">Descuento</th>
+                            <th style="width:15%">Subtotal</th>
+                            <th style="width:11%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoProductos"></tbody>
+                </table>
+            </div>
+            <div id="emptyState" class="empty-state">No hay productos. Haz clic en “+ Agregar producto”.</div>
+            <div class="totales" id="seccionTotales" style="display:none;">
+                <div class="totales-grid">
+                    <div class="total-item"><span>Subtotal</span><strong id="subtotal">0.00</strong></div>
+                    <div class="total-item"><span>Descuento</span><strong id="descuentoTotal">0.00</strong></div>
+                    <div class="total-item final"><span>Total (Bs)</span><strong id="totalFinal">0.00</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="button" class="btn btn-outline" onclick="limpiarFormulario()">Limpiar</button>
+            <button type="button" class="btn btn-primary" id="btnGuardar" onclick="guardarVenta()">
+                💾 Registrar Venta en SQLite
+            </button>
+        </div>
+
+        <div class="card" id="cardUltimas" style="display:none;">
+            <div class="card-title">🕐 Últimas ventas en la base de datos</div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nº Venta</th>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                            <th>Total (Bs)</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyUltimas"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:3000/api';
+        let productos = [];
+        let contadorFilas = 0;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const ahora = new Date();
+            document.getElementById('fecha_venta').value = ahora.toISOString().slice(0, 10);
+            document.getElementById('hora_venta').value = ahora.toTimeString().slice(0, 5);
+            document.getElementById('numero_venta').value = 'V-' + String(Date.now()).slice(-6);
+
+            await verificarConexion();
+            await cargarProductos();
+            await cargarUsuarios();
+            await cargarUltimasVentas();
+            agregarProducto();
+        });
+
+        function mostrarStatus(msg, tipo) {
+            const bar = document.getElementById('statusBar');
+            bar.textContent = msg;
+            bar.className = 'status-bar ' + tipo;
+            if (tipo === 'ok') setTimeout(() => { bar.style.display = 'none'; }, 5000);
+        }
+
+        async function verificarConexion() {
+            const badge = document.getElementById('badgeConexion');
+            try {
+                const res = await fetch(API + '/health');
+                const data = await res.json();
+                if (data.ok) {
+                    badge.textContent = 'Conectado a SQLite';
+                    badge.className = 'badge badge-success';
+                    mostrarStatus(`Servidor OK · ${data.productos} productos · ${data.ventas} ventas`, 'ok');
+                } else throw new Error(data.error);
+            } catch (e) {
+                badge.textContent = 'Sin conexión';
+                badge.className = 'badge badge-danger';
+                mostrarStatus('No se pudo conectar al servidor. Ejecuta: cd backend && npm start', 'error');
+            }
+        }
+
+        async function cargarProductos() {
+            try {
+                const res = await fetch(API + '/productos');
+                const json = await res.json();
+                if (json.ok) productos = json.data;
+            } catch (e) {
+                console.error(e);
+                productos = [];
+            }
+        }
+
+        async function cargarUsuarios() {
+            try {
+                const res = await fetch(API + '/usuarios');
+                const json = await res.json();
+                if (json.ok && json.data.length) {
+                    const sel = document.getElementById('id_usuario');
+                    sel.innerHTML = json.data.map(u =>
+                        `<option value="${u.id_usuario}">${u.nombres} ${u.apellidos} (${u.id_usuario})</option>`
+                    ).join('');
+                }
+            } catch (e) { /* usa el option por defecto */ }
+        }
+
+        async function cargarUltimasVentas() {
+            try {
+                const res = await fetch(API + '/ventas');
+                const json = await res.json();
+                if (!json.ok || !json.data.length) return;
+                document.getElementById('tbodyUltimas').innerHTML = json.data.map(v => `
+                    <tr>
+                        <td>${v.numero_venta}</td>
+                        <td>${v.fecha_venta}</td>
+                        <td>${v.hora_venta}</td>
+                        <td>${Number(v.total).toFixed(2)}</td>
+                        <td><span class="badge badge-success">${v.estado}</span></td>
+                    </tr>
+                `).join('');
+                document.getElementById('cardUltimas').style.display = 'block';
+            } catch (e) { /* silencioso */ }
+        }
+
+        function agregarProducto() {
+            contadorFilas++;
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('seccionTotales').style.display = 'block';
+
+            const opciones = productos.length
+                ? productos.map(p =>
+                    `<option value="${p.id_producto}" data-precio="${p.precio}">${p.codigo} - ${p.nombre} (stock: ${p.stock_actual ?? '?'})</option>`
+                  ).join('')
+                : '<option value="">No hay productos (¿servidor apagado?)</option>';
+
+            const tr = document.createElement('tr');
+            tr.id = 'fila-' + contadorFilas;
+            tr.innerHTML = `
+                <td>
+                    <select class="producto-select" onchange="actualizarPrecio(${contadorFilas})" required style="width:100%">
+                        <option value="">Seleccione producto...</option>
+                        ${opciones}
+                    </select>
+                </td>
+                <td><input type="number" class="cantidad" min="0.5" step="0.5" value="1" onchange="calcularFila(${contadorFilas})" style="width:80px"></td>
+                <td><input type="number" class="precio" min="0" step="0.01" value="0.00" onchange="calcularFila(${contadorFilas})" style="width:100px"></td>
+                <td><input type="number" class="descuento" min="0" step="0.01" value="0.00" onchange="calcularFila(${contadorFilas})" style="width:80px"></td>
+                <td><strong class="subtotal-fila">0.00</strong></td>
+                <td><button type="button" class="btn btn-danger btn-sm" onclick="eliminarFila(${contadorFilas})">✕</button></td>
+            `;
+            document.getElementById('cuerpoProductos').appendChild(tr);
+        }
+
+        function actualizarPrecio(id) {
+            const fila = document.getElementById('fila-' + id);
+            const opt = fila.querySelector('.producto-select').selectedOptions[0];
+            fila.querySelector('.precio').value = parseFloat(opt.dataset.precio || 0).toFixed(2);
+            calcularFila(id);
+        }
+
+        function calcularFila(id) {
+            const fila = document.getElementById('fila-' + id);
+            if (!fila) return;
+            const c = parseFloat(fila.querySelector('.cantidad').value) || 0;
+            const p = parseFloat(fila.querySelector('.precio').value) || 0;
+            const d = parseFloat(fila.querySelector('.descuento').value) || 0;
+            fila.querySelector('.subtotal-fila').textContent = ((c * p) - d).toFixed(2);
+            calcularTotales();
+        }
+
+        function calcularTotales() {
+            let sub = 0, desc = 0;
+            document.querySelectorAll('#cuerpoProductos tr').forEach(fila => {
+                const c = parseFloat(fila.querySelector('.cantidad').value) || 0;
+                const p = parseFloat(fila.querySelector('.precio').value) || 0;
+                const d = parseFloat(fila.querySelector('.descuento').value) || 0;
+                sub += c * p;
+                desc += d;
+            });
+            document.getElementById('subtotal').textContent = sub.toFixed(2);
+            document.getElementById('descuentoTotal').textContent = desc.toFixed(2);
+            document.getElementById('totalFinal').textContent = (sub - desc).toFixed(2);
+        }
+
+        function eliminarFila(id) {
+            const fila = document.getElementById('fila-' + id);
+            if (fila) fila.remove();
+            if (!document.querySelectorAll('#cuerpoProductos tr').length) {
+                document.getElementById('emptyState').style.display = 'block';
+                document.getElementById('seccionTotales').style.display = 'none';
+            }
+            calcularTotales();
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('cuerpoProductos').innerHTML = '';
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('seccionTotales').style.display = 'none';
+            document.getElementById('observacion').value = '';
+            contadorFilas = 0;
+            document.getElementById('numero_venta').value = 'V-' + String(Date.now()).slice(-6);
+            agregarProducto();
+        }
+
+        async function guardarVenta() {
+            const filas = document.querySelectorAll('#cuerpoProductos tr');
+            if (!filas.length) {
+                alert('Agrega al menos un producto.');
+                return;
+            }
+            for (const f of filas) {
+                if (!f.querySelector('.producto-select').value) {
+                    alert('Selecciona un producto en todas las filas.');
+                    return;
+                }
+            }
+
+            const btn = document.getElementById('btnGuardar');
+            btn.disabled = true;
+            btn.textContent = '⏳ Guardando...';
+
+            const detalles = Array.from(filas).map(f => ({
+                id_producto: f.querySelector('.producto-select').value,
+                cantidad: parseFloat(f.querySelector('.cantidad').value),
+                precio_unitario: parseFloat(f.querySelector('.precio').value),
+                descuento: parseFloat(f.querySelector('.descuento').value) || 0,
+                subtotal: parseFloat(f.querySelector('.subtotal-fila').textContent)
+            }));
+
+            const payload = {
+                numero_venta: document.getElementById('numero_venta').value,
+                fecha_venta: document.getElementById('fecha_venta').value,
+                hora_venta: document.getElementById('hora_venta').value,
+                id_usuario: document.getElementById('id_usuario').value,
+                observacion: document.getElementById('observacion').value || 'Venta de mostrador',
+                subtotal: parseFloat(document.getElementById('subtotal').textContent),
+                descuento_total: parseFloat(document.getElementById('descuentoTotal').textContent),
+                total: parseFloat(document.getElementById('totalFinal').textContent),
+                detalles
+            };
+
+            try {
+                const res = await fetch(API + '/ventas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!data.ok) throw new Error(data.error || 'Error desconocido');
+
+                mostrarStatus(`✅ Venta ${data.numero_venta} guardada en SQLite`, 'ok');
+                alert(`✅ ¡Éxito!\n\nVenta ${data.numero_venta} registrada en la base de datos SQLite.\nTotal: Bs ${payload.total.toFixed(2)}\n\nÁbrela en DBeaver para verificar.`);
+                limpiarFormulario();
+                await cargarUltimasVentas();
+                await cargarProductos();
+            } catch (err) {
+                console.error(err);
+                mostrarStatus('❌ Error: ' + err.message, 'error');
+                alert('❌ No se pudo guardar.\n\n¿Está corriendo el servidor?\n\ncd backend\nnpm start\n\nDetalle: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💾 Registrar Venta en SQLite';
+            }
+        }
+    </script>
+</body>
+</html>
